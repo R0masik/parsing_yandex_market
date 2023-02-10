@@ -62,7 +62,7 @@ def data_to_dict(p_shop_names, p_price_vals):
 
 
 def save_to_csv(p_dict):
-    path_to_file = open('out_data.csv', 'w')
+    path_to_file = open('out_data.csv', 'w', encoding='utf-8-sig')
     wr = csv.writer(path_to_file)
     for sh_n, pr in p_dict.items():
         wr.writerow([sh_n, pr])
