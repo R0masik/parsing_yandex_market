@@ -30,7 +30,7 @@ def get_url_for_page(p_page_num):
 
 m_browser = init_browser(URL, PATH_TO_CHROME_PROFILE, PROFILE_DIR_NAME)
 
-page_num = 3
+page_num = 2
 cur_url = get_url_for_page(page_num)
 m_browser.get(cur_url)
 
