@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+PAGE_COUNT = 6
 URL = "https://market.yandex.ru/product--smartfon-apple-iphone-14-pro-max/1768738052/offers?glfilter=14871214%3A16048172_101813096786&glfilter=23476910%3A26684950_101813096786&glfilter=24938610%3A41821219_101813096786&glfilter=25879492%3A25879710_101813096786&cpa=1&grhow=supplier&sku=101813096786&resale_goods=resale_new&local-offers-first=0"
 PATH_TO_CHROME_PROFILE = r"user-data-dir=C:\\Users\\Victor\\AppData\\Local\\Google\\Chrome\\User Data\\"
 PROFILE_DIR_NAME = '--profile-directory=Default'
@@ -62,22 +63,12 @@ def main():
     m_browser = init_browser(PATH_TO_CHROME_PROFILE, PROFILE_DIR_NAME)
     shop_names = []
     price_vals = []
-    page_num = 1
-    previus_shop_names = []
-    previus_price_vals = []
-    stop_parsing = False
-    while not stop_parsing:
+    for page_num in range(1, PAGE_COUNT + 1):
         m_browser.get(get_url_for_page(page_num))
-        tmp_shop_names = norm_shop_names(m_browser.find_elements(By.XPATH, SHOP_NAME_XP))
-        tmp_price_vals = norm_price_vals(m_browser.find_elements(By.XPATH, PRICE_VAL_XP))
-        if previus_shop_names == tmp_shop_names and previus_price_vals == tmp_price_vals:
-            stop_parsing = True
-        else:
-            previus_shop_names = tmp_shop_names
-            previus_price_vals = tmp_price_vals
-            shop_names += tmp_shop_names
-            price_vals += tmp_price_vals
-            page_num += 1
+        tmp_shop_names = m_browser.find_elements(By.XPATH, SHOP_NAME_XP)
+        shop_names += norm_shop_names(tmp_shop_names)
+        tmp_price_vals = m_browser.find_elements(By.XPATH, PRICE_VAL_XP)
+        price_vals += norm_price_vals(tmp_price_vals)
 
     if len(shop_names) != len(price_vals):
         print('Parsing error!')
@@ -85,10 +76,9 @@ def main():
 
     m_data = dict(zip(shop_names, price_vals))
     sort_shops = sorted(m_data, key=m_data.get)
-    m_sort_data = {sh_n: m_data[sh_n] for sh_n in sort_shops}
+    m_sort_data = {sh_n:m_data[sh_n] for sh_n in sort_shops}
     print(len(m_sort_data))
     save_to_csv(m_sort_data)
-
 
 if __name__ == '__main__':
     main()
