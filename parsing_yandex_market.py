@@ -1,6 +1,5 @@
 import csv
 import sys
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -16,6 +15,7 @@ def init_browser(p_profile_path, p_profile_dir_name):
     options = Options()
     options.add_argument(p_profile_path)
     options.add_argument(p_profile_dir_name)
+    options.add_argument('--headless=new')
     browser = webdriver.Chrome(options=options)
     return browser
 
