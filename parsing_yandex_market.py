@@ -9,6 +9,7 @@ PATH_TO_CHROME_PROFILE = r"user-data-dir=C:\\Users\\Victor\\AppData\\Local\\Goog
 PROFILE_DIR_NAME = '--profile-directory=Default'
 SHOP_NAME_XP = "//*[self::span[@class = 'Vu-M2 _3Xnho']|self::img[@class = '_2DwmZ']|self::span[@class = '_3BJUh _3kBZk']|self::img[@class = '_2DwmZ _19HY9']]"
 PRICE_VAL_XP = "//div[contains(@class,'_3NaXx _1YKgk')]"
+NEXT_PAGE_XP = "//a[contains(@class, '_2prNU _3OFYT')]"
 
 
 def init_browser(p_profile_path, p_profile_dir_name):
@@ -16,8 +17,7 @@ def init_browser(p_profile_path, p_profile_dir_name):
     options.add_argument(p_profile_path)
     options.add_argument(p_profile_dir_name)
     options.add_argument('--headless=new')
-    browser = webdriver.Chrome(options=options)
-    return browser
+    return webdriver.Chrome(options=options)
 
 
 def get_url_for_page(p_page_num):
@@ -63,21 +63,15 @@ def main():
     shop_names = []
     price_vals = []
     page_num = 1
-    previus_shop_names = []
-    previus_price_vals = []
     stop_parsing = False
     while not stop_parsing:
         m_browser.get(get_url_for_page(page_num))
-        tmp_shop_names = norm_shop_names(m_browser.find_elements(By.XPATH, SHOP_NAME_XP))
-        tmp_price_vals = norm_price_vals(m_browser.find_elements(By.XPATH, PRICE_VAL_XP))
-        if previus_shop_names == tmp_shop_names and previus_price_vals == tmp_price_vals:
-            stop_parsing = True
-        else:
-            previus_shop_names = tmp_shop_names
-            previus_price_vals = tmp_price_vals
-            shop_names += tmp_shop_names
-            price_vals += tmp_price_vals
+        shop_names += norm_shop_names(m_browser.find_elements(By.XPATH, SHOP_NAME_XP))
+        price_vals += norm_price_vals(m_browser.find_elements(By.XPATH, PRICE_VAL_XP))
+        if m_browser.find_elements(By.XPATH, NEXT_PAGE_XP):
             page_num += 1
+        else:
+            stop_parsing = True
 
     if len(shop_names) != len(price_vals):
         print('Parsing error!')
