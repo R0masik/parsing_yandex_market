@@ -25,7 +25,7 @@ def init_browser():
     options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument('--headless=new')
+    # options.add_argument('--headless=new')
     return webdriver.Chrome(options=options)
 
 
@@ -58,6 +58,15 @@ def norm_shop_names(p_shop_names):
     return out_shop_names
 
 
+def get_page(p_browser, p_url):
+    p_browser.get(p_url)
+    time.sleep(TIME_OUT)
+    if p_browser.find_elements(By.XPATH, CAPTCHA_XP):
+        p_browser.find_element(By.XPATH, CAPTCHA_XP).click()
+        time.sleep(TIME_OUT)
+    return p_browser
+
+
 def scan():
     b = init_browser()
     shop_names = []
@@ -83,4 +92,6 @@ def scan():
         print(shop_names[i] + '---' + str(price_vals[i]))
 
 
-scan()
+b = init_browser()
+b = get_page(b, get_url_for_page(1))
+time.sleep(300)
