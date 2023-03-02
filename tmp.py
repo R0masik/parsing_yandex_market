@@ -7,13 +7,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 
-PAGE_COUNT = 2
+# PAGE_COUNT = 3
 URL = "https://market.yandex.ru/product--smartfon-apple-iphone-14-pro-max/1768738052/offers?glfilter=14871214%3A16048172_101813096786&glfilter=23476910%3A26684950_101813096786&glfilter=24938610%3A41821219_101813096786&glfilter=25879492%3A25879710_101813096786&cpa=1&grhow=supplier&sku=101813096786&resale_goods=resale_new&local-offers-first=0"
 PATH_TO_CHROME_PROFILE = r"user-data-dir=C:\\Users\\Victor\\AppData\\Local\\Google\\Chrome\\User Data\\"
 PROFILE_DIR_NAME = '--profile-directory=Default'
 SHOP_NAME_XP = "//*[self::span[@class = 'Vu-M2 _3Xnho']|self::img[@class = '_2DwmZ']|self::span[@class = '_3BJUh _3kBZk']|self::img[@class = '_2DwmZ _19HY9']]"
 PRICE_VAL_XP = "//div[contains(@class,'_3NaXx _1YKgk')]"
 CAPTCHA_XP = "//input[contains(@class, 'CheckboxCaptcha-Button')]"
+NEXT_PAGE_XP = "//a[contains(@class, '_2prNU _3OFYT')]"
 TIME_OUT = 1
 
 
@@ -57,25 +58,29 @@ def norm_shop_names(p_shop_names):
     return out_shop_names
 
 
-def scan_page(p_url):
+def scan():
     b = init_browser()
-    b.get(p_url)
-    time.sleep(TIME_OUT)
-    if b.find_elements(By.XPATH, CAPTCHA_XP):
-        captcha = b.find_element(By.XPATH, CAPTCHA_XP)
-        captcha.click()
+    shop_names = []
+    price_vals = []
+    page_num = 1
+    last_page = False
+    while not last_page:
+        b.get(get_url_for_page(page_num))
         time.sleep(TIME_OUT)
-    return norm_shop_names(b.find_elements(By.XPATH, SHOP_NAME_XP))
+        if b.find_elements(By.XPATH, CAPTCHA_XP):
+            b.find_element(By.XPATH, CAPTCHA_XP).click()
+            time.sleep(TIME_OUT)
+        shop_names += norm_shop_names(b.find_elements(By.XPATH, SHOP_NAME_XP))
+        price_vals += norm_price_vals(b.find_elements(By.XPATH, PRICE_VAL_XP))
+        if not b.find_elements(By.XPATH, NEXT_PAGE_XP):
+            last_page = True
+        page_num += 1
+    b.close()
+
+    print(len(shop_names))
+    print(len(price_vals))
+    for i in range(len(shop_names)):
+        print(shop_names[i] + '---' + str(price_vals[i]))
 
 
-urls = [get_url_for_page(i) for i in range(1, PAGE_COUNT + 1)]
-
-thread_lst = []
-with ThreadPoolExecutor() as executor:
-    for url in urls:
-        thread_lst.append(executor.submit(scan_page, url))
-
-wait(thread_lst)
-
-for thrd in thread_lst:
-    print(thrd.result())
+scan()

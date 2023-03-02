@@ -1,16 +1,16 @@
 import time
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, wait, as_completed
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import csv
 
-PAGE_COUNT = 7
 CHROME_BINARY_LOCATION = 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
 SRC_URL = "https://market.yandex.ru/product--smartfon-apple-iphone-14-pro-max/1768738052/offers?glfilter=14871214%3A16048172_101813096786&glfilter=23476910%3A26684950_101813096786&glfilter=24938610%3A41821219_101813096786&glfilter=25879492%3A25879710_101813096786&cpa=1&grhow=supplier&sku=101813096786&resale_goods=resale_new&local-offers-first=0"
 SHOP_NAME_XP = "//*[self::span[@class = 'Vu-M2 _3Xnho']|self::img[@class = '_2DwmZ']|self::span[@class = '_3BJUh _3kBZk']|self::img[@class = '_2DwmZ _19HY9']]"
 PRICE_VAL_XP = "//div[contains(@class,'_3NaXx _1YKgk')]"
 CAPTCHA_BUTTON_XP = "//input[contains(@class, 'CheckboxCaptcha-Button')]"
+NEXT_PAGE_XP = "//a[contains(@class, '_2prNU _3OFYT')]"
 TIMEOUT = 1
 
 
@@ -63,32 +63,38 @@ def save_to_csv(p_dict):
             wr.writerow([sh_n, pr])
 
 
-def scan_page(p_url):
+def scan_page(p_page_num):
     browser = init_browser()
-    browser.get(p_url)
+    browser.get(get_url_for_page(p_page_num))
     time.sleep(TIMEOUT)
     if browser.find_elements(By.XPATH, CAPTCHA_BUTTON_XP):
         browser.find_element(By.XPATH, CAPTCHA_BUTTON_XP).click()
         time.sleep(TIMEOUT)
     shops = norm_shop_names(browser.find_elements(By.XPATH, SHOP_NAME_XP))
     prices = norm_price_vals(browser.find_elements(By.XPATH, PRICE_VAL_XP))
-    return shops, prices
+    if browser.find_elements(By.XPATH, NEXT_PAGE_XP):
+        is_last_page = False
+    else:
+        is_last_page = True
+    browser.close()
+    return shops, prices, is_last_page
 
 
 def main():
-    urls = [get_url_for_page(i) for i in range(1, PAGE_COUNT + 1)]
     futures_lst = []
-    with ThreadPoolExecutor() as executor:
-        for url in urls:
-            futures_lst.append(executor.submit(scan_page, url))
-    wait(futures_lst)  # не ждет выполнения потоков ?
     shop_names = []
     price_vals = []
-    for future in futures_lst:
-        res = future.result()
-        shop_names += res[0]
-        price_vals += res[1]
-    print(len(shop_names))  # отличается количество с строкой 95
+    page_num = 1
+    last_page = False
+    with ThreadPoolExecutor() as executor:
+        while not last_page:
+            futures_lst.append(executor.submit(scan_page, page_num))
+        wait(futures_lst)
+        for future in futures_lst:
+            res = future.result()
+            shop_names += res[0]
+            price_vals += res[1]
+    print(len(shop_names))
     m_data = dict(zip(shop_names, price_vals))
     sort_shops = sorted(m_data, key=m_data.get)
     m_sort_data = {sh_n: m_data[sh_n] for sh_n in sort_shops}
