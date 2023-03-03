@@ -15,17 +15,18 @@ SHOP_NAME_XP = "//*[self::span[@class = 'Vu-M2 _3Xnho']|self::img[@class = '_2Dw
 PRICE_VAL_XP = "//div[contains(@class,'_3NaXx _1YKgk')]"
 CAPTCHA_XP = "//input[contains(@class, 'CheckboxCaptcha-Button')]"
 NEXT_PAGE_XP = "//a[contains(@class, '_2prNU _3OFYT')]"
+SORT_PRICE_XP = "//button[contains(@class, '_23p69 _2jKCa _2QtCX cia-cs')]"
 TIME_OUT = 1
 
 
 def init_browser():
     options = Options()
     options.binary_location = 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
-    options.add_argument("--no-sandbox")  # bypass OS security model
-    options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
-    # options.add_argument('--headless=new')
+    #options.add_argument('--headless=new')
     return webdriver.Chrome(options=options)
 
 
@@ -67,31 +68,31 @@ def get_page(p_browser, p_url):
     return p_browser
 
 
-def scan():
-    b = init_browser()
-    shop_names = []
-    price_vals = []
-    page_num = 1
-    last_page = False
-    while not last_page:
-        b.get(get_url_for_page(page_num))
-        time.sleep(TIME_OUT)
-        if b.find_elements(By.XPATH, CAPTCHA_XP):
-            b.find_element(By.XPATH, CAPTCHA_XP).click()
-            time.sleep(TIME_OUT)
-        shop_names += norm_shop_names(b.find_elements(By.XPATH, SHOP_NAME_XP))
-        price_vals += norm_price_vals(b.find_elements(By.XPATH, PRICE_VAL_XP))
-        if not b.find_elements(By.XPATH, NEXT_PAGE_XP):
-            last_page = True
-        page_num += 1
-    b.close()
-
-    print(len(shop_names))
-    print(len(price_vals))
-    for i in range(len(shop_names)):
-        print(shop_names[i] + '---' + str(price_vals[i]))
+def scan(p_url, p_browser):
+    p_browser = get_page(p_browser, p_url)
+    out_shop_names = norm_shop_names(p_browser.find_elements(By.XPATH, SHOP_NAME_XP))
+    out_price_vals = norm_price_vals(p_browser.find_elements(By.XPATH, PRICE_VAL_XP))
+    return out_shop_names, out_price_vals
 
 
-b = init_browser()
-b = get_page(b, get_url_for_page(1))
-time.sleep(300)
+def exctract_future(f):
+    return f.result()[0], f.result()[1]
+
+
+with ThreadPoolExecutor() as executor:
+    b1 = init_browser()
+    f1 = executor.submit(scan, get_url_for_page(1), b1)
+    b2 = init_browser()
+    f2 = executor.submit(scan, get_url_for_page(2), b2)
+    # f3 = executor.submit(scan, get_url_for_page(3))
+    # f4 = executor.submit(scan, get_url_for_page(4))
+
+
+s1, p1 = exctract_future(f1)
+s2, p2 = exctract_future(f2)
+
+print(s1)
+print(p1)
+print(s2)
+print(p2)
+
